@@ -2,14 +2,15 @@
 
 # 模型配置
 model:
-  name: "Qwen/Qwen-1_8B"
+  name: "../models/qwen2-1.5b"  # 本地模型路径（相对于项目根目录）
+  # 或者使用绝对路径: "C:/Users/lenovo/Desktop/PDML/models/qwen2-1.5b"
   cache_dir: "./cache"
   
 # 数据配置
 data:
-  train_path: "./data/train.jsonl"
-  val_path: "./data/val.jsonl"
-  test_path: "./data/test.jsonl"
+  train_path: "./data/train_converted.jsonl"  # 使用转换后的数据
+  val_path: "./data/valid_converted.jsonl"     # 使用转换后的数据
+  test_path: "./data/test_converted.jsonl"    # 使用转换后的数据
   task_type: "summarization"  # summarization, math, dialogue
 
 # 训练配置
