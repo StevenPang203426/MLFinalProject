@@ -14,11 +14,8 @@ from torch.utils.data import Dataset
 from transformers import (
     AutoModelForCausalLM, 
     AutoTokenizer,
-    TrainingArguments,
-    Trainer
 )
 from trl import PPOTrainer, PPOConfig
-from trl.core import LengthSampler
 import wandb
 
 # 添加项目根目录到路径
@@ -226,10 +223,33 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"使用设备: {device}")
     
+    # 检查模型路径是否存在，如果不存在且不是 HuggingFace 模型ID，尝试从 HuggingFace 下载
+    model_path = Path(model_name) if not model_name.startswith(('http://', 'https://')) else None
+    if model_path and model_path.exists():
+        # 检查是否有模型权重文件
+        has_weights = any(
+            (model_path / f).exists() 
+            for f in ['pytorch_model.bin', 'model.safetensors', 'model-*.safetensors', 'pytorch_model-*.bin']
+        )
+        if not has_weights:
+            print(f"⚠ 警告: 模型目录存在但未找到权重文件")
+            print(f"   尝试从 HuggingFace 下载模型...")
+            # 尝试使用 HuggingFace 模型ID（假设是 qwen2-1.5b）
+            if 'qwen2-1.5b' in str(model_name).lower() or 'qwen2' in str(model_name).lower():
+                hf_model_id = "Qwen/Qwen2-1.5B"
+                print(f"   使用 HuggingFace 模型ID: {hf_model_id}")
+                model_name = hf_model_id
+            else:
+                print(f"✗ 错误: 无法确定 HuggingFace 模型ID")
+                print(f"   请确保模型目录包含权重文件，或使用 HuggingFace 模型ID（如 'Qwen/Qwen2-1.5B'）")
+                sys.exit(1)
+    
     try:
+        # 修复 deprecated 警告
+        dtype = torch.float16 if device == "cuda" else torch.float32
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+            dtype=dtype,
             device_map="auto" if device == "cuda" else None,
             trust_remote_code=True
         )
@@ -242,6 +262,12 @@ def main():
         print(f"✓ 模型加载完成")
     except Exception as e:
         print(f"✗ 模型加载失败: {e}")
+        print(f"\n可能的解决方案:")
+        print(f"1. 【推荐】使用下载脚本下载模型权重:")
+        print(f"   python download_model.py --model_id Qwen/Qwen2-1.5B --local_dir ../../models/qwen2-1.5b")
+        print(f"2. 如果使用本地路径，请确保模型目录包含权重文件（pytorch_model.bin 或 model.safetensors）")
+        print(f"3. 如果网络可用，使用 HuggingFace 模型ID: --model_name 'Qwen/Qwen2-1.5B'")
+        print(f"4. 查看下载指南: README_DOWNLOAD.md")
         sys.exit(1)
     
     # 加载训练数据
@@ -293,9 +319,10 @@ def main():
     
     # 创建参考模型（用于 KL 散度计算）
     print("\n创建参考模型...")
+    dtype = torch.float16 if device == "cuda" else torch.float32
     ref_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        dtype=dtype,
         device_map="auto" if device == "cuda" else None,
         trust_remote_code=True
     )

@@ -2,8 +2,11 @@
 
 # 模型配置
 model:
+  # 选项1: 使用本地模型路径（推荐，需要先下载权重文件）
   name: "../models/qwen2-1.5b"  # 本地模型路径（相对于项目根目录）
-  # 或者使用绝对路径: "C:/Users/lenovo/Desktop/PDML/models/qwen2-1.5b"
+  # name: "C:/Users/lenovo/Desktop/PDML/models/qwen2-1.5b"  # 绝对路径
+  # 选项2: 使用 HuggingFace 模型ID（需要网络连接）
+  # name: "Qwen/Qwen2-1.5B"
   cache_dir: "./cache"
   
 # 数据配置
