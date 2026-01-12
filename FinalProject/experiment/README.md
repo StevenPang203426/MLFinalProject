@@ -24,6 +24,8 @@ rlhf/
   - SFT 数据: `train_converted.jsonl`
   - 偏好数据: `train-00000-of-00001-3cbd295cedeecf91.parquet`
 
+数据来自 `https://huggingface.co/datasets/CarperAI/openai_summarize_comparisons`
+
 ### 依赖库
 
 - `transformers`: Hugging Face Transformers 库
